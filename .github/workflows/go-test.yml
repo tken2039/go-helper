@@ -1,0 +1,41 @@
+name: Check go sources
+
+on: push
+
+jobs:
+  setup_go:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.18
+        id: go
+      - name: Check out
+        uses: actions/checkout@v3
+      - name: Cache environment
+        uses: actions/cache@v2.1.0
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+  check:
+    needs: setup_go
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check go sources
+        run: make check-no-staticcheck
+      - uses: dominikh/staticcheck-action@v1.2.0
+        with:
+          version: "2022.1.1"
+  test:
+    needs:
+      - setup_go
+      - check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: test
+        run: go test ./... -v
